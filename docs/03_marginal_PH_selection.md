@@ -4,7 +4,7 @@
 
 To demonstrate that **marginal proportional hazards can hold exactly even when treatment and control survivors have different frailty distributions**.
 
-This experiment illustrates a central argument of Hernán (2010): a constant marginal hazard ratio does not guarantee comparability between the populations contributing to the hazards.
+This experiment illustrates that a constant marginal HR does not guarantee comparability between the populations contributing to the hazards.
 
 Unlike Experiment 2, where conditional PH holds but marginal PH fails, we now impose marginal PH directly.
 
@@ -12,8 +12,8 @@ Unlike Experiment 2, where conditional PH holds but marginal PH fails, we now im
 
 Consider a randomized trial with two treatment arms:
 
-- \(X=0\): Control
-- \(X=1\): Treatment
+- $X=0$: Control
+- $X=1$: Treatment
 
 Each arm initially contains 50% frail and 50% healthy individuals.
 
@@ -45,7 +45,7 @@ Marginal proportional hazards holds exactly by construction.
 
 ## 3. Introducing frailty
 
-Let \(F\) denote frail individuals and \(H\) healthy individuals.
+Let $F$ denote frail individuals and $H$ healthy individuals.
 
 We define their subgroup-specific survival functions as:
 
@@ -145,7 +145,7 @@ $$
 
 Thus, the treatment group retains a larger proportion of frail survivors, even though the marginal HR remains exactly 0.5.
 
-## 6. Why this does not violate proportional hazards
+## 6. Why this does not violate PH
 
 Marginal hazards are calculated over the populations still at risk:
 
@@ -201,15 +201,8 @@ Importantly, randomization still permits causal comparisons of marginal survival
 3. A constant marginal HR does not imply a constant conditional or individual-level treatment effect.
 4. The HR alone does not describe the full causal effect of treatment on survival.
 
-## 9. Limitations
 
-This is an analytical construction rather than a simulation of randomly sampled individuals.
-
-The subgroup survival functions were deliberately chosen to preserve marginal PH. They should not be interpreted as a realistic biological model without further justification.
-
-The example demonstrates a mathematical possibility, not that survivor selection necessarily produces constant marginal HRs.
-
-## 10. Reproducibility
+## 9. Reproducibility
 
 The R implementation is available in:
 
@@ -218,9 +211,3 @@ The R implementation is available in:
 The interactive version is available in Tab 3 of the Shiny application:
 
 `app/app.R`
-
-## Reference
-
-Hernán MA. The Hazards of Hazard Ratios. *Epidemiology*. 2010;21(1):13–15.
-
-https://doi.org/10.1097/EDE.0b013e3181c1ea43
