@@ -24,18 +24,52 @@ ui <- fluidPage(
     ),
     
     mainPanel(
+      plotOutput("hazardPlot"),
       plotOutput("ratioPlot"),
       plotOutput("survivalPlot"),
       
-      p("The hazard ratio stays constant, while
-        the cumulative risk ratio approaches 1
-        as follow-up increases.")
+      h4("Interpretation"),
+      textOutput("interpretation")
     )
   )
 )
 
 # Server calculations
 server <- function(input, output, session) {
+  
+  
+  # Plot the marginal hazards for both groups
+  output$hazardPlot <- renderPlot({
+    
+    # Create the follow-up time sequence
+    t <- seq(0, input$followup, length.out = 500)
+    
+    # Define the constant hazards
+    lambda0 <- input$lambda0
+    lambda1 <- lambda0 * input$hr
+    
+    # Generate the hazard values at every time
+    h0 <- rep(lambda0, length(t))
+    h1 <- rep(lambda1, length(t))
+    
+    # Plot control hazard
+    plot(t, h0, type = "l",
+         col = "red", lwd = 2,
+         ylim = c(0, max(h0, h1) * 1.2),
+         xlab = "Time",
+         ylab = "Hazard",
+         main = "Marginal hazards")
+    
+    # Add treatment hazard
+    lines(t, h1, col = "blue", lwd = 2)
+    
+    # Add legend
+    legend("topright",
+           legend = c("Control", "Treatment"),
+           col = c("red", "blue"),
+           lty = 1, lwd = 2)
+  })
+  
   
   output$ratioPlot <- renderPlot({
     
@@ -83,6 +117,35 @@ server <- function(input, output, session) {
            legend = c("Control", "Treatment"),
            col = c("red", "blue"),
            lty = 1, lwd = 2)
+  })
+  
+  
+  # Generate an interpretation based on slider values
+  output$interpretation <- renderText({
+    
+    # Retrieve the parameters selected by the user
+    t <- input$followup       # Follow-up duration
+    h <- input$hr             # Hazard ratio
+    lambda0 <- input$lambda0  # Baseline hazard (control)
+    
+    # Calculate cumulative event risks at time t
+    # Under constant hazards: Risk(t) = 1 - exp(-lambda * t)
+    risk0 <- -expm1(-lambda0 * t)       # Control risk
+    risk1 <- -expm1(-lambda0 * h * t)   # Treatment risk
+    
+    # Calculate cumulative risk ratio
+    RR <- risk1 / risk0
+    
+    # Construct the text displayed in the application
+    paste0(
+      "At time ", t,
+      ", the hazard ratio is ", round(h, 2),
+      ", while the cumulative risk ratio is ",
+      round(RR, 3), ". ",
+      "The cumulative event risk is ",
+      round(100 * risk0, 1), "% in controls and ",
+      round(100 * risk1, 1), "% in treated individuals."
+    )
   })
   
 }
