@@ -3,15 +3,8 @@
 
 ## 1. Objective
 
-To investigate the relationship between hazard ratios (HR),
-survival probabilities, and cumulative risk ratios (RR)
-under the proportional hazards assumption.
-
-In particular, we demonstrate that a constant HR does not
+We demonstrate that a constant HR does not
 imply a constant cumulative RR.
-
-This experiment is inspired by Hernán (2010),
-*The Hazards of Hazard Ratios*.
 
 ## 2. Experimental setting
 
@@ -53,8 +46,6 @@ For c > 0, the hazard decreases toward:
 
 When c = 0, the hazard remains constant at a.
 
-This model was selected for its mathematical simplicity.
-It is not derived from a biological mortality process.
 
 ### 2.2 Treatment hazard
 
@@ -231,18 +222,16 @@ Thus:
 | Treatment cumulative risk | 0.393 |
 | RR | 0.622 |
 
-Although treatment halves the instantaneous hazard,
+Although treatment halves the hazard,
 it does not halve the cumulative event risk at t = 10.
 
 Importantly, this difference does not require frailty
-or survivor-selection bias.
-
-It arises from the mathematical distinction between
+or survivor-selection bias,it arises from the mathematical distinction between
 instantaneous rates and cumulative probabilities.
 
 ## 6. When do HR and RR converge?
 
-For small cumulative hazards:
+For small cumulative hazards ($1st$ order Taylor expansion):
 
 ```math
 1-e^{-H}\approx H.
@@ -262,10 +251,10 @@ Hence, when the event is rare over the follow-up period:
 RR(t)\approx HR.
 ```
 
-In the constant-hazard example, this occurs when at
+In the constant-hazard example, this occurs when $at$
 is small.
 
-As follow-up increases, the cumulative risks increase.
+**However, as fu increases, cumulative event risks can only increase or remain constant.** Consequently, the rare-event approximation may become less accurate, and the cumulative RR may diverge from the HR.
 
 Because our specified control hazard remains positive
 in the long term, both cumulative hazards diverge
@@ -315,35 +304,6 @@ The application displays:
 - A numerical interpretation at the selected
   follow-up time.
 
-### Suggested explorations
-
-**Experiment A: Constant hazards**
-
-Set c = 0 and theta = 0.5.
-
-Observe that both hazards and the HR remain constant,
-while the cumulative RR changes over time.
-
-**Experiment B: Decreasing hazards**
-
-Increase c while keeping theta fixed.
-
-Both hazards decrease over time, but their ratio
-remains constant.
-
-**Experiment C: Rare events**
-
-Reduce a or shorten follow-up.
-
-Observe how the cumulative RR approaches the HR
-when cumulative event probabilities are small.
-
-**Experiment D: Long follow-up**
-
-Increase the follow-up duration.
-
-Observe how the cumulative RR approaches 1
-while the HR remains unchanged.
 
 ## 8. Causal interpretation
 
@@ -351,7 +311,7 @@ In a randomized trial, treatment assignment is
 independent of baseline characteristics in expectation.
 
 However, the hazard at time t is defined among
-individuals who have survived up to t.
+individuals who have survived **up to t.**
 
 The populations contributing to the treatment
 and control hazards may therefore differ in
@@ -360,9 +320,8 @@ their prognostic characteristics.
 Proportional hazards does not guarantee that
 these survivor populations remain comparable.
 
-A constant marginal HR should not automatically
-be interpreted as a constant individual-level
-causal effect.
+_A constant marginal HR should not automatically_
+_be interpreted as a constant individual-level causal effect._
 
 By contrast, cumulative risk comparisons in a
 randomized trial can describe causal effects
@@ -371,23 +330,12 @@ the usual assumptions.
 
 ## 9. Limitations
 
-This experiment directly specifies marginal hazards.
-
-It does not generate individual-level observations
+This experiment directly specifies marginal hazards, it does not generate individual-level observations
 or explicitly model frailty.
-
 Therefore, it does not demonstrate how depletion
 of susceptible individuals produces changes
 in the composition of survivors.
 
-These mechanisms are investigated in:
-
-- Experiment 2: Depletion of susceptibles.
-- Experiment 3: Marginal PH despite survivor selection.
-
-Additionally, the decreasing hazard function is
-chosen for illustration and is not intended to
-represent a realistic all-cause mortality process.
 
 ## 10. Reproducibility
 

@@ -2,9 +2,9 @@
 
 ## 1. Objective
 
-To demonstrate how survivor selection can produce a time-varying marginal hazard ratio, even when the conditional hazard ratio is constant.
+To demonstrate how survivor selection can produce a time-varying marginal HR, even when the conditional HR is constant.
 
-This experiment illustrates a central argument in Hernán (2010): hazard ratios compare individuals who remain at risk, and the composition of these populations can change over time.
+HR compare individuals who remain at risk, and the composition of these populations can change over time.
 
 ## 2. Experimental setting
 
@@ -89,7 +89,7 @@ Treatment improves survival among both types, so frail individuals are depleted 
 The proportion of frail individuals among survivors is obtained through Bayes' theorem:
 
 $$
-P(F\mid T\ge t,X=x)=\frac{0.5S_{F,x}(t)}{S_x(t)}.
+P(F\mid T\ge t,X=x) = \frac{P(T\ge t\mid F, X = x)P(F\mid X = x)}{P(T\ge t\mid X = x)} = \frac{0.5S_{F,x}(t)}{S_x(t)}.
 $$
 
 At baseline, this proportion equals 0.5 in both arms.
@@ -181,8 +181,4 @@ The R implementation is available in:
 
 The experiment uses analytical survival functions rather than randomly generated individual-level observations.
 
-## Reference
 
-Hernán MA. The Hazards of Hazard Ratios. *Epidemiology*. 2010;21(1):13–15.
-
-https://doi.org/10.1097/EDE.0b013e3181c1ea43
