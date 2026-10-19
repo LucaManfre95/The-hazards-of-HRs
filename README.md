@@ -56,6 +56,28 @@ shiny::runApp("app")
 
 Source code: [app/app.R](app/app.R)
 
+## Reproducibility and AI disclosure
+
+### Software
+
+- R version: 4.3.3
+- Main package: `shiny`
+
+The R scripts and interactive application are publicly available in this repository.
+
+### Use of generative AI
+
+OpenAI's ChatGPT (GPT-6) was used to assist with:
+
+- Developing and reviewing R code.
+- Constructing mathematical examples and simulations.
+- Designing the interactive Shiny application.
+- Drafting scientific explanations and documentation.
+
+The project author is responsible for reviewing the code,
+verifying the mathematical results, and ensuring the
+scientific accuracy of the material.
+
 ## Reference
 
 Hernán MA. The Hazards of Hazard Ratios. *Epidemiology*. 2010;21(1):13–15.
