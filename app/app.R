@@ -124,7 +124,79 @@ ui <- navbarPage(
         textOutput("frailtyInterpretation")
       )
     )
+  ),
+  
+  # ============================================================
+  # EXPERIMENT 3: MARGINAL PH AND SURVIVOR SELECTION
+  # ============================================================
+  
+  tabPanel(
+    "3. Marginal PH and selection",
+    
+    h3("Can marginal PH hold despite survivor selection?"),
+    
+    p("We construct a randomized trial in which the
+    marginal hazard ratio is exactly constant,
+    but the composition of survivors changes."),
+    
+    withMathJax(
+      "$$S_0(t)=e^{-\\lambda_0t},
+       \\qquad
+       S_1(t)=e^{-HR\\lambda_0t}$$"
+    ),
+    
+    p("Each arm initially contains 50% frail and
+    50% healthy individuals."),
+    
+    p("We construct subgroup survival functions so
+    their average equals the marginal survival
+    function in each arm."),
+    
+    withMathJax(
+      "$$S_{F,x}(t)=S_x(t)^2,
+       \\qquad
+       S_{H,x}(t)=2S_x(t)-S_x(t)^2$$"
+    ),
+    
+    sidebarLayout(
+      sidebarPanel(
+        
+        sliderInput("lambda3", "Control hazard:",
+                    min = 0.01, max = 0.30,
+                    value = 0.10, step = 0.01),
+        
+        sliderInput("hr3", "Marginal HR:",
+                    min = 0.10, max = 1,
+                    value = 0.50, step = 0.05),
+        
+        sliderInput("time3", "Follow-up:",
+                    min = 1, max = 50, value = 30)
+      ),
+      
+      mainPanel(
+        
+        h4("1. Frailty among survivors"),
+        
+        p("Both groups start with identical frailty
+        distributions. Treatment changes who survives
+        to later times."),
+        
+        plotOutput("composition3"),
+        
+        h4("2. Marginal hazard ratio"),
+        
+        p("Despite the changing survivor composition,
+        the marginal HR remains constant."),
+        
+        plotOutput("hrPlot3"),
+        
+        h4("3. Interpretation"),
+        
+        textOutput("interpretation3")
+      )
+    )
   )
+  
 )
 
 
@@ -340,6 +412,132 @@ server <- function(input, output, session) {
       "composition of survivors changes over time."
     )
   })
+  
+  
+  # ============================================================
+  # EXPERIMENT 3: MARGINAL PH DESPITE SELECTION
+  # ============================================================
+  
+  model3 <- reactive({
+    
+    # Follow-up sequence
+    t <- seq(0, input$time3, length.out = 500)
+    
+    # User-selected parameters
+    lambda0 <- input$lambda3
+    HR <- input$hr3
+    
+    # Marginal hazards
+    lambda1 <- HR * lambda0
+    
+    # Marginal survival probabilities
+    S0 <- exp(-lambda0 * t)
+    S1 <- exp(-lambda1 * t)
+    
+    # Subgroup survival probabilities
+    # F = Frail, H = Healthy
+    SF0 <- S0^2
+    SH0 <- 2 * S0 - S0^2
+    
+    SF1 <- S1^2
+    SH1 <- 2 * S1 - S1^2
+    
+    # Check that subgroup averages reproduce
+    # marginal survival in both groups
+    stopifnot(
+      isTRUE(all.equal(0.5 * SF0 + 0.5 * SH0, S0)),
+      isTRUE(all.equal(0.5 * SF1 + 0.5 * SH1, S1))
+    )
+    
+    # Frailty prevalence among survivors (Bayes)
+    pF0 <- 0.5 * SF0 / S0
+    pF1 <- 0.5 * SF1 / S1
+    
+    # Marginal HR is constant by construction
+    HRm <- rep(HR, length(t))
+    
+    list(
+      t = t,
+      pF0 = pF0,
+      pF1 = pF1,
+      HRm = HRm
+    )
+  })
+  
+  
+  # ------------------------------------------------------------
+  # Plot 1: Survivor composition
+  # ------------------------------------------------------------
+  
+  output$composition3 <- renderPlot({
+    
+    m <- model3()
+    
+    plot(m$t, m$pF0,
+         type = "l",
+         col = "red",
+         lwd = 2,
+         ylim = c(0, 0.5),
+         xlab = "Time",
+         ylab = "Proportion frail among survivors",
+         main = "Changing survivor composition")
+    
+    lines(m$t, m$pF1, col = "blue", lwd = 2)
+    
+    legend("topright",
+           legend = c("Control", "Treatment"),
+           col = c("red", "blue"),
+           lty = 1, lwd = 2)
+  })
+  
+  
+  # ------------------------------------------------------------
+  # Plot 2: Constant marginal HR
+  # ------------------------------------------------------------
+  
+  output$hrPlot3 <- renderPlot({
+    
+    m <- model3()
+    
+    plot(m$t, m$HRm,
+         type = "l",
+         col = "purple",
+         lwd = 2,
+         ylim = c(0, 1.1),
+         xlab = "Time",
+         ylab = "Marginal HR",
+         main = "Marginal proportional hazards")
+    
+    abline(h = 1, lty = 2, col = "gray")
+  })
+  
+  
+  # ------------------------------------------------------------
+  # Dynamic interpretation
+  # ------------------------------------------------------------
+  
+  output$interpretation3 <- renderText({
+    
+    m <- model3()
+    n <- length(m$t)
+    
+    paste0(
+      "At t = ", input$time3,
+      ", frail individuals represent ",
+      round(100 * m$pF0[n], 1),
+      "% of control survivors and ",
+      round(100 * m$pF1[n], 1),
+      "% of treated survivors. ",
+      
+      "Nevertheless, the marginal HR remains ",
+      round(m$HRm[n], 2),
+      " at every time. ",
+      
+      "Proportional hazards therefore does not ",
+      "guarantee comparability among survivors."
+    )
+  })
+  
   
 }
 
