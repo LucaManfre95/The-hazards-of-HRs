@@ -10,6 +10,11 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
+      # Controls how quickly the baseline hazard decreases
+      sliderInput("decay", "Hazard decay rate:",
+                  min = 0, max = 0.5,
+                  value = 0.2, step = 0.01),
+      
       sliderInput("lambda0", "Baseline hazard:",
                   min = 0.01, max = 0.30,
                   value = 0.10, step = 0.01),
@@ -35,35 +40,94 @@ ui <- fluidPage(
 )
 
 # Server calculations
+
 server <- function(input, output, session) {
   
+  # ============================================================
+  # 1. SHARED MODEL
+  # ============================================================
   
-  # Plot the marginal hazards for both groups
-  output$hazardPlot <- renderPlot({
+  # Calculate all quantities from the same hazard model.
+  # Shiny updates these calculations whenever a slider changes.
+  
+  model <- reactive({
     
-    # Create the follow-up time sequence
+    # Follow-up time sequence
     t <- seq(0, input$followup, length.out = 500)
     
-    # Define the constant hazards
+    # Retrieve user-selected parameters
     lambda0 <- input$lambda0
-    lambda1 <- lambda0 * input$hr
+    HR <- input$hr
+    c <- input$decay
     
-    # Generate the hazard values at every time
-    h0 <- rep(lambda0, length(t))
-    h1 <- rep(lambda1, length(t))
+    # Control hazard: decreases over time when c > 0
+    h0 <- lambda0 * (0.1 + 0.9 * exp(-c * t))
+    
+    # Treatment hazard: proportional to control hazard
+    h1 <- HR * h0
+    
+    # Control cumulative hazard
+    # H0(t) = integral of h0(u) from 0 to t
+    if (c == 0) {
+      H0 <- lambda0 * t
+    } else {
+      H0 <- lambda0 * (
+        0.1 * t + 0.9 * (-expm1(-c * t)) / c
+      )
+    }
+    
+    # Treatment cumulative hazard
+    H1 <- HR * H0
+    
+    # Survival probabilities: S(t) = exp(-H(t))
+    S0 <- exp(-H0)
+    S1 <- exp(-H1)
+    
+    # Cumulative event risks: R(t) = 1 - S(t)
+    R0 <- -expm1(-H0)
+    R1 <- -expm1(-H1)
+    
+    # Cumulative risk ratio
+    # Undefined at t = 0, where both risks equal zero
+    RR <- ifelse(R0 == 0, NA_real_, R1 / R0)
+    
+    # Return calculated quantities
+    list(
+      t = t,
+      h0 = h0,
+      h1 = h1,
+      S0 = S0,
+      S1 = S1,
+      R0 = R0,
+      R1 = R1,
+      HR = rep(HR, length(t)),
+      RR = RR
+    )
+  })
+  
+  
+  # ============================================================
+  # 2. HAZARD PLOT
+  # ============================================================
+  
+  output$hazardPlot <- renderPlot({
+    
+    # Retrieve model results
+    m <- model()
     
     # Plot control hazard
-    plot(t, h0, type = "l",
-         col = "red", lwd = 2,
-         ylim = c(0, max(h0, h1) * 1.2),
+    plot(m$t, m$h0,
+         type = "l",
+         col = "red",
+         lwd = 2,
+         ylim = c(0, max(m$h0, m$h1) * 1.2),
          xlab = "Time",
          ylab = "Hazard",
          main = "Marginal hazards")
     
     # Add treatment hazard
-    lines(t, h1, col = "blue", lwd = 2)
+    lines(m$t, m$h1, col = "blue", lwd = 2)
     
-    # Add legend
     legend("topright",
            legend = c("Control", "Treatment"),
            col = c("red", "blue"),
@@ -71,47 +135,60 @@ server <- function(input, output, session) {
   })
   
   
+  # ============================================================
+  # 3. HAZARD RATIO VS CUMULATIVE RISK RATIO
+  # ============================================================
+  
   output$ratioPlot <- renderPlot({
     
-    t <- seq(0.001, input$followup, length.out = 500)
+    m <- model()
     
-    lambda0 <- input$lambda0
-    lambda1 <- input$hr * lambda0
+    # Set the y-axis range to display both ratios
+    upper <- max(c(1, m$HR, m$RR), na.rm = TRUE) * 1.1
     
-    S0 <- exp(-lambda0 * t)
-    S1 <- exp(-lambda1 * t)
-    
-    RR <- (1 - S1) / (1 - S0)
-    HR <- rep(input$hr, length(t))
-    
-    plot(t, RR, type = "l", col = "red",
-         lwd = 2, ylim = c(0, 1),
-         xlab = "Time", ylab = "Ratio",
+    # Plot hazard ratio
+    plot(m$t, m$HR,
+         type = "l",
+         col = "blue",
+         lwd = 2,
+         ylim = c(0, upper),
+         xlab = "Time",
+         ylab = "Ratio",
          main = "HR versus cumulative RR")
     
-    lines(t, HR, col = "blue", lwd = 2)
+    # Add cumulative risk ratio
+    lines(m$t, m$RR, col = "red", lwd = 2)
     
-    legend("bottomright",
+    # Reference line at ratio = 1
+    abline(h = 1, lty = 2, col = "gray")
+    
+    legend("topright",
            legend = c("HR", "RR"),
            col = c("blue", "red"),
            lty = 1, lwd = 2)
   })
   
   
+  # ============================================================
+  # 4. SURVIVAL CURVES
+  # ============================================================
+  
   output$survivalPlot <- renderPlot({
     
-    t <- seq(0, input$followup, length.out = 500)
+    m <- model()
     
-    S0 <- exp(-input$lambda0 * t)
-    S1 <- exp(-input$lambda0 * input$hr * t)
-    
-    plot(t, S0, type = "l", col = "red", lwd = 2,
+    # Plot control survival
+    plot(m$t, m$S0,
+         type = "l",
+         col = "red",
+         lwd = 2,
          ylim = c(0, 1),
          xlab = "Time",
          ylab = "Survival probability",
          main = "Survival curves")
     
-    lines(t, S1, col = "blue", lwd = 2)
+    # Add treatment survival
+    lines(m$t, m$S1, col = "blue", lwd = 2)
     
     legend("topright",
            legend = c("Control", "Treatment"),
@@ -120,34 +197,42 @@ server <- function(input, output, session) {
   })
   
   
-  # Generate an interpretation based on slider values
+  # ============================================================
+  # 5. DYNAMIC INTERPRETATION
+  # ============================================================
+  
   output$interpretation <- renderText({
     
-    # Retrieve the parameters selected by the user
-    t <- input$followup       # Follow-up duration
-    h <- input$hr             # Hazard ratio
-    lambda0 <- input$lambda0  # Baseline hazard (control)
+    m <- model()
     
-    # Calculate cumulative event risks at time t
-    # Under constant hazards: Risk(t) = 1 - exp(-lambda * t)
-    risk0 <- -expm1(-lambda0 * t)       # Control risk
-    risk1 <- -expm1(-lambda0 * h * t)   # Treatment risk
+    # Extract values at the end of follow-up
+    n <- length(m$t)
     
-    # Calculate cumulative risk ratio
-    RR <- risk1 / risk0
+    HR <- m$HR[n]
+    RR <- m$RR[n]
     
-    # Construct the text displayed in the application
+    risk0 <- m$R0[n]
+    risk1 <- m$R1[n]
+    
+    # Construct explanatory text
     paste0(
-      "At time ", t,
-      ", the hazard ratio is ", round(h, 2),
+      "At time ", input$followup,
+      ", the hazard ratio is ", round(HR, 2),
       ", while the cumulative risk ratio is ",
       round(RR, 3), ". ",
+      
       "The cumulative event risk is ",
-      round(100 * risk0, 1), "% in controls and ",
-      round(100 * risk1, 1), "% in treated individuals."
+      round(100 * risk0, 1),
+      "% in controls and ",
+      round(100 * risk1, 1),
+      "% in treated individuals. ",
+      
+      "The hazards may change over time, ",
+      "but their ratio remains constant."
     )
   })
   
 }
+
 
 shinyApp(ui, server)
