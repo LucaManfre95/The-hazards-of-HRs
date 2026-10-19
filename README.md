@@ -13,38 +13,38 @@ The project uses mathematical examples, simulations, and interactive visualizati
 - Depletion of susceptibles and survivor selection.
 - Marginal versus conditional HRs.
 
-## Experiment 1: Proportional hazards
+## Experiments
 
-We assume a time-varying control hazard:
+### Experiment 1: Proportional hazards
 
-$$
-\lambda_0(t)=\lambda_0(0.1+0.9e^{-ct})
-$$
+**Question:** Can the hazard ratio remain constant while the cumulative risk ratio changes over time?
 
-and impose proportional hazards:
+We impose marginal proportional hazards and investigate the relationship between hazards, survival probabilities, and cumulative risks.
 
-$$
-\lambda_1(t)=HR\cdot\lambda_0(t).
-$$
+- [R script](R/R_01_proportional_hazards.R)
+- Interactive visualization: Tab 1 of the Shiny app
 
-The interactive application allows users to change the baseline hazard, hazard ratio, decay parameter, and follow-up duration.
+### Experiment 2: Depletion of susceptibles
 
+**Question:** Can conditional proportional hazards hold while the marginal hazard ratio changes over time?
 
-**Important:** This experiment specifies marginal hazards directly. It does not yet simulate individual frailty or survivor selection.
+We introduce baseline frailty and demonstrate how survivor selection changes the composition of treatment groups.
 
-## Running the application
+- [R script](R/02_frailty.R)
+- [Mathematical explanation](docs/02_depletion_of_susceptibles.md)
+- Interactive visualization: Tab 2 of the Shiny app
 
-Install Shiny in R:
+## Interactive application
 
-```r
-install.packages("shiny")
-```
+Both experiments are available in our Shiny application.
 
-Run the app from the project directory:
+To run locally:
 
 ```r
 shiny::runApp("app")
 ```
+
+Source code: [app/app.R](app/app.R)
 
 ## Reference
 
