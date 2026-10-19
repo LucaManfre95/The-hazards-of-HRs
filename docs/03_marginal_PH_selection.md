@@ -87,9 +87,7 @@ $$
 However, the proportion of frail individuals among survivors is:
 
 $$
-P(F\mid T\ge t,X=x)
-=
-\frac{P(T\ge t\mid F,X=x)P(F\mid X=x)}
+P(F\mid T\ge t,X=x) = \frac{P(T\ge t\mid F,X=x)P(F\mid X=x)}
 {P(T\ge t\mid X=x)}.
 $$
 
@@ -99,7 +97,7 @@ $$
 =\frac{0.5S_{F,x}(t)}{S_x(t)}.
 $$
 
-Since \(S_{F,x}(t)=S_x(t)^2\):
+Since $\(S_{F,x}(t)=S_x(t)^2\)$:
 
 $$
 \boxed{
