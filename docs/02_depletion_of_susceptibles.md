@@ -109,22 +109,12 @@ The marginal hazard is the average of subgroup-specific hazards weighted by thei
 
 For control:
 
-$$
-\lambda_0(t)
-=
-p_{F,0}(t)(0.20)
-+
-[1-p_{F,0}(t)](0.02).
+$$\lambda_0(t) = p_{F,0}(t)(0.20) + [1-p_{F,0}(t)](0.02).
 $$
 
 For treatment:
 
-$$
-\lambda_1(t)
-=
-p_{F,1}(t)(0.10)
-+
-[1-p_{F,1}(t)](0.01).
+$$\lambda_1(t) = p_{F,1}(t)(0.10) + [1-p_{F,1}(t)](0.01).
 $$
 
 Here,
@@ -138,9 +128,7 @@ Since the weights evolve differently between treatment arms, the marginal hazard
 Consequently,
 
 $$
-HR_{\text{marginal}}(t)
-=
-\frac{\lambda_1(t)}{\lambda_0(t)}
+HR_{\text{marginal}}(t) = \frac{\lambda_1(t)}{\lambda_0(t)}
 $$
 
 can change over time, despite the constant conditional HR of 0.5.
