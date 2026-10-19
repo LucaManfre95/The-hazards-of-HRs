@@ -25,6 +25,7 @@ ui <- fluidPage(
     
     mainPanel(
       plotOutput("ratioPlot"),
+      plotOutput("survivalPlot"),
       
       p("The hazard ratio stays constant, while
         the cumulative risk ratio approaches 1
@@ -61,6 +62,29 @@ server <- function(input, output, session) {
            col = c("blue", "red"),
            lty = 1, lwd = 2)
   })
+  
+  
+  output$survivalPlot <- renderPlot({
+    
+    t <- seq(0, input$followup, length.out = 500)
+    
+    S0 <- exp(-input$lambda0 * t)
+    S1 <- exp(-input$lambda0 * input$hr * t)
+    
+    plot(t, S0, type = "l", col = "red", lwd = 2,
+         ylim = c(0, 1),
+         xlab = "Time",
+         ylab = "Survival probability",
+         main = "Survival curves")
+    
+    lines(t, S1, col = "blue", lwd = 2)
+    
+    legend("topright",
+           legend = c("Control", "Treatment"),
+           col = c("red", "blue"),
+           lty = 1, lwd = 2)
+  })
+  
 }
 
 shinyApp(ui, server)
