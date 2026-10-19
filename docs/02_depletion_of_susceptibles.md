@@ -89,9 +89,7 @@ Treatment improves survival among both types, so frail individuals are depleted 
 The proportion of frail individuals among survivors is obtained through Bayes' theorem:
 
 $$
-P(F\mid T\ge t,X=x)
-=
-\frac{0.5S_{F,x}(t)}{S_x(t)}.
+P(F\mid T\ge t,X=x)=\frac{0.5S_{F,x}(t)}{S_x(t)}.
 $$
 
 At baseline, this proportion equals 0.5 in both arms.
@@ -167,15 +165,7 @@ However, survival depends on both treatment and frailty.
 
 Conditioning on survival can therefore introduce an association between treatment and frailty:
 
-$$
-X\perp F
-$$
-
-at baseline, but generally,
-
-$$
-X\not\perp F\mid T\ge t.
-$$
+$X\perp F$ at baseline, but generally, $X\not\perp F\mid T\ge t$.
 
 This is a form of **collider stratification bias**, also called survivor selection.
 

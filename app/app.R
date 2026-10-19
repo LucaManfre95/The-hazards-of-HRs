@@ -1,73 +1,158 @@
+
 library(shiny)
 
-# User interface
-ui <- fluidPage(
-  titlePanel("The Hazards of Hazard Ratios"),
+# ============================================================
+# USER INTERFACE
+# ============================================================
+
+ui <- navbarPage(
+  "The Hazards of Hazard Ratios",
   
-  p("Experiment 1: Proportional hazards"),
-  p("Explore how a constant HR can coexist
-    with a changing cumulative risk ratio."),
+  # ----------------------------------------------------------
+  # EXPERIMENT 1: PROPORTIONAL HAZARDS
+  # ----------------------------------------------------------
   
-  sidebarLayout(
-    sidebarPanel(
-      # Controls how quickly the baseline hazard decreases
-      sliderInput("decay", "Hazard decay rate:",
-                  min = 0, max = 0.5,
-                  value = 0.2, step = 0.01),
-      
-      sliderInput("lambda0", "Baseline hazard:",
-                  min = 0.01, max = 0.30,
-                  value = 0.10, step = 0.01),
-      
-      sliderInput("hr", "Hazard ratio:",
-                  min = 0.10, max = 1,
-                  value = 0.50, step = 0.05),
-      
-      sliderInput("followup", "Follow-up time:",
-                  min = 1, max = 100,
-                  value = 30)
+  tabPanel(
+    "1. Proportional hazards",
+    
+    h3("Constant HR does not imply constant RR"),
+    
+    p("We impose proportional hazards between treatment
+      and control. The hazards may decrease over time,
+      but their ratio remains constant."),
+    
+    withMathJax(
+      "$$\\lambda_1(t) = HR \\cdot \\lambda_0(t)$$"
     ),
     
-    mainPanel(
-      plotOutput("hazardPlot"),
-      plotOutput("ratioPlot"),
-      plotOutput("survivalPlot"),
+    sidebarLayout(
+      sidebarPanel(
+        sliderInput("lambda0", "Initial control hazard:",
+                    min = 0.01, max = 0.30,
+                    value = 0.10, step = 0.01),
+        
+        sliderInput("hr", "Hazard ratio:",
+                    min = 0.10, max = 1,
+                    value = 0.50, step = 0.05),
+        
+        sliderInput("decay", "Hazard decay rate:",
+                    min = 0, max = 0.5,
+                    value = 0.2, step = 0.01),
+        
+        sliderInput("followup", "Follow-up:",
+                    min = 1, max = 100, value = 30)
+      ),
       
-      h4("Interpretation"),
-      textOutput("interpretation")
+      mainPanel(
+        h4("Marginal hazards"),
+        plotOutput("hazardPlot"),
+        
+        h4("Hazard ratio versus cumulative risk ratio"),
+        plotOutput("ratioPlot"),
+        
+        h4("Survival probabilities"),
+        plotOutput("survivalPlot"),
+        
+        h4("Interpretation"),
+        textOutput("interpretation")
+      )
+    )
+  ),
+  
+  # ----------------------------------------------------------
+  # EXPERIMENT 2: FRAILTY
+  # ----------------------------------------------------------
+  
+  tabPanel(
+    "2. Depletion of susceptibles",
+    
+    h3("How survival changes population composition"),
+    
+    p("Imagine a randomized trial with two types of
+      individuals: frail and healthy. Frail individuals
+      have a higher mortality hazard."),
+    
+    p("We assume that treatment multiplies the hazard
+      by the same factor within both subpopulations."),
+    
+    withMathJax(
+      "$$\\lambda_{F,1}=HR\\lambda_{F,0},
+      \\qquad
+      \\lambda_{H,1}=HR\\lambda_{H,0}$$"
+    ),
+    
+    sidebarLayout(
+      sidebarPanel(
+        sliderInput("pF", "Proportion frail at baseline:",
+                    min = 0.05, max = 0.95,
+                    value = 0.50, step = 0.05),
+        
+        sliderInput("hF", "Frail control hazard:",
+                    min = 0.05, max = 0.50,
+                    value = 0.20, step = 0.01),
+        
+        sliderInput("hH", "Healthy control hazard:",
+                    min = 0.005, max = 0.05,
+                    value = 0.02, step = 0.005),
+        
+        sliderInput("hrF", "Conditional treatment HR:",
+                    min = 0.10, max = 1,
+                    value = 0.50, step = 0.05),
+        
+        sliderInput("timeF", "Follow-up:",
+                    min = 1, max = 50, value = 30)
+      ),
+      
+      mainPanel(
+        h4("1. Composition of surviving populations"),
+        
+        p("The curves show the proportion of frail
+          individuals among those still alive in
+          each treatment arm."),
+        
+        plotOutput("frailtyPlot"),
+        
+        h4("2. Marginal versus conditional HR"),
+        
+        p("Although the conditional HR is fixed,
+          the marginal HR can change because the
+          frailty composition of survivors changes."),
+        
+        plotOutput("frailtyHRPlot"),
+        
+        h4("Interpretation"),
+        textOutput("frailtyInterpretation")
+      )
     )
   )
 )
 
-# Server calculations
+
+# ============================================================
+# SERVER
+# ============================================================
 
 server <- function(input, output, session) {
   
-  # ============================================================
-  # 1. SHARED MODEL
-  # ============================================================
-  
-  # Calculate all quantities from the same hazard model.
-  # Shiny updates these calculations whenever a slider changes.
+  # ----------------------------------------------------------
+  # EXPERIMENT 1: SHARED MATHEMATICAL MODEL
+  # ----------------------------------------------------------
   
   model <- reactive({
     
-    # Follow-up time sequence
     t <- seq(0, input$followup, length.out = 500)
     
-    # Retrieve user-selected parameters
     lambda0 <- input$lambda0
     HR <- input$hr
     c <- input$decay
     
-    # Control hazard: decreases over time when c > 0
+    # Time-varying control hazard
     h0 <- lambda0 * (0.1 + 0.9 * exp(-c * t))
     
-    # Treatment hazard: proportional to control hazard
+    # Marginal proportional hazards
     h1 <- HR * h0
     
     # Control cumulative hazard
-    # H0(t) = integral of h0(u) from 0 to t
     if (c == 0) {
       H0 <- lambda0 * t
     } else {
@@ -76,163 +161,187 @@ server <- function(input, output, session) {
       )
     }
     
-    # Treatment cumulative hazard
     H1 <- HR * H0
     
-    # Survival probabilities: S(t) = exp(-H(t))
+    # Survival probabilities
     S0 <- exp(-H0)
     S1 <- exp(-H1)
     
-    # Cumulative event risks: R(t) = 1 - S(t)
+    # Cumulative event risks
     R0 <- -expm1(-H0)
     R1 <- -expm1(-H1)
     
     # Cumulative risk ratio
-    # Undefined at t = 0, where both risks equal zero
     RR <- ifelse(R0 == 0, NA_real_, R1 / R0)
     
-    # Return calculated quantities
-    list(
-      t = t,
-      h0 = h0,
-      h1 = h1,
-      S0 = S0,
-      S1 = S1,
-      R0 = R0,
-      R1 = R1,
-      HR = rep(HR, length(t)),
-      RR = RR
+    list(t = t, h0 = h0, h1 = h1,
+         S0 = S0, S1 = S1,
+         R0 = R0, R1 = R1,
+         HR = rep(HR, length(t)), RR = RR)
+  })
+  
+  # Marginal hazards
+  output$hazardPlot <- renderPlot({
+    m <- model()
+    
+    plot(m$t, m$h0, type = "l", col = "red",
+         lwd = 2, ylim = c(0, max(m$h0) * 1.2),
+         xlab = "Time", ylab = "Hazard")
+    
+    lines(m$t, m$h1, col = "blue", lwd = 2)
+    
+    legend("topright", c("Control", "Treatment"),
+           col = c("red", "blue"), lty = 1, lwd = 2)
+  })
+  
+  # HR versus RR
+  output$ratioPlot <- renderPlot({
+    m <- model()
+    
+    plot(m$t, m$HR, type = "l", col = "blue",
+         lwd = 2, ylim = c(0, 1.1),
+         xlab = "Time", ylab = "Ratio")
+    
+    lines(m$t, m$RR, col = "red", lwd = 2)
+    
+    abline(h = 1, lty = 2, col = "gray")
+    
+    legend("bottomright", c("HR", "RR"),
+           col = c("blue", "red"), lty = 1, lwd = 2)
+  })
+  
+  # Survival curves
+  output$survivalPlot <- renderPlot({
+    m <- model()
+    
+    plot(m$t, m$S0, type = "l", col = "red",
+         lwd = 2, ylim = c(0, 1),
+         xlab = "Time", ylab = "Survival probability")
+    
+    lines(m$t, m$S1, col = "blue", lwd = 2)
+    
+    legend("topright", c("Control", "Treatment"),
+           col = c("red", "blue"), lty = 1, lwd = 2)
+  })
+  
+  # Experiment 1 interpretation
+  output$interpretation <- renderText({
+    m <- model()
+    n <- length(m$t)
+    
+    paste0(
+      "At t = ", input$followup,
+      ", HR = ", round(m$HR[n], 3),
+      " and RR = ", round(m$RR[n], 3),
+      ". Control risk = ", round(100 * m$R0[n], 1),
+      "%; treatment risk = ",
+      round(100 * m$R1[n], 1),
+      "%. The marginal HR remains constant even ",
+      "when both hazards change over time."
     )
   })
   
   
-  # ============================================================
-  # 2. HAZARD PLOT
-  # ============================================================
+  # ----------------------------------------------------------
+  # EXPERIMENT 2: FRAILTY MODEL
+  # ----------------------------------------------------------
   
-  output$hazardPlot <- renderPlot({
+  frailtyModel <- reactive({
     
-    # Retrieve model results
-    m <- model()
+    # Follow-up times and baseline frailty proportion
+    t <- seq(0, input$timeF, length.out = 500)
+    p <- input$pF
     
-    # Plot control hazard
-    plot(m$t, m$h0,
-         type = "l",
-         col = "red",
-         lwd = 2,
-         ylim = c(0, max(m$h0, m$h1) * 1.2),
-         xlab = "Time",
-         ylab = "Hazard",
-         main = "Marginal hazards")
+    # Constant subgroup hazards
+    hF0 <- input$hF
+    hH0 <- input$hH
     
-    # Add treatment hazard
-    lines(m$t, m$h1, col = "blue", lwd = 2)
+    # Treatment multiplies both hazards by the same HR
+    hF1 <- input$hrF * hF0
+    hH1 <- input$hrF * hH0
     
-    legend("topright",
-           legend = c("Control", "Treatment"),
-           col = c("red", "blue"),
-           lty = 1, lwd = 2)
+    # Survival functions within each subgroup
+    SF0 <- exp(-hF0 * t)
+    SH0 <- exp(-hH0 * t)
+    
+    SF1 <- exp(-hF1 * t)
+    SH1 <- exp(-hH1 * t)
+    
+    # Marginal survival probabilities
+    S0 <- p * SF0 + (1 - p) * SH0
+    S1 <- p * SF1 + (1 - p) * SH1
+    
+    # Frailty proportions among survivors (Bayes)
+    pF0 <- p * SF0 / S0
+    pF1 <- p * SF1 / S1
+    
+    # Marginal hazards weighted by survivor composition
+    hm0 <- pF0 * hF0 + (1 - pF0) * hH0
+    hm1 <- pF1 * hF1 + (1 - pF1) * hH1
+    
+    # Marginal hazard ratio
+    HRm <- hm1 / hm0
+    
+    list(t = t, pF0 = pF0, pF1 = pF1,
+         hm0 = hm0, hm1 = hm1, HRm = HRm)
   })
   
-  
-  # ============================================================
-  # 3. HAZARD RATIO VS CUMULATIVE RISK RATIO
-  # ============================================================
-  
-  output$ratioPlot <- renderPlot({
+  # Plot depletion of frail individuals
+  output$frailtyPlot <- renderPlot({
+    m <- frailtyModel()
     
-    m <- model()
-    
-    # Set the y-axis range to display both ratios
-    upper <- max(c(1, m$HR, m$RR), na.rm = TRUE) * 1.1
-    
-    # Plot hazard ratio
-    plot(m$t, m$HR,
-         type = "l",
-         col = "blue",
-         lwd = 2,
-         ylim = c(0, upper),
-         xlab = "Time",
-         ylab = "Ratio",
-         main = "HR versus cumulative RR")
-    
-    # Add cumulative risk ratio
-    lines(m$t, m$RR, col = "red", lwd = 2)
-    
-    # Reference line at ratio = 1
-    abline(h = 1, lty = 2, col = "gray")
-    
-    legend("topright",
-           legend = c("HR", "RR"),
-           col = c("blue", "red"),
-           lty = 1, lwd = 2)
-  })
-  
-  
-  # ============================================================
-  # 4. SURVIVAL CURVES
-  # ============================================================
-  
-  output$survivalPlot <- renderPlot({
-    
-    m <- model()
-    
-    # Plot control survival
-    plot(m$t, m$S0,
-         type = "l",
-         col = "red",
-         lwd = 2,
+    plot(m$t, m$pF0, type = "l",
+         col = "red", lwd = 2,
          ylim = c(0, 1),
          xlab = "Time",
-         ylab = "Survival probability",
-         main = "Survival curves")
+         ylab = "Proportion frail among survivors")
     
-    # Add treatment survival
-    lines(m$t, m$S1, col = "blue", lwd = 2)
+    lines(m$t, m$pF1, col = "blue", lwd = 2)
     
-    legend("topright",
-           legend = c("Control", "Treatment"),
+    legend("topright", c("Control", "Treatment"),
            col = c("red", "blue"),
            lty = 1, lwd = 2)
   })
   
-  
-  # ============================================================
-  # 5. DYNAMIC INTERPRETATION
-  # ============================================================
-  
-  output$interpretation <- renderText({
+  # Compare conditional and marginal HR
+  output$frailtyHRPlot <- renderPlot({
+    m <- frailtyModel()
     
-    m <- model()
+    plot(m$t, m$HRm, type = "l",
+         col = "purple", lwd = 2,
+         ylim = range(c(m$HRm, input$hrF, 1)),
+         xlab = "Time", ylab = "Hazard ratio")
     
-    # Extract values at the end of follow-up
+    abline(h = input$hrF, col = "black", lty = 2)
+    abline(h = 1, col = "gray", lty = 3)
+    
+    legend("topright",
+           c("Marginal HR", "Conditional HR"),
+           col = c("purple", "black"),
+           lty = c(1, 2), lwd = 2)
+  })
+  
+  # Interpret survivor selection numerically
+  output$frailtyInterpretation <- renderText({
+    m <- frailtyModel()
     n <- length(m$t)
     
-    HR <- m$HR[n]
-    RR <- m$RR[n]
-    
-    risk0 <- m$R0[n]
-    risk1 <- m$R1[n]
-    
-    # Construct explanatory text
     paste0(
-      "At time ", input$followup,
-      ", the hazard ratio is ", round(HR, 2),
-      ", while the cumulative risk ratio is ",
-      round(RR, 3), ". ",
-      
-      "The cumulative event risk is ",
-      round(100 * risk0, 1),
-      "% in controls and ",
-      round(100 * risk1, 1),
-      "% in treated individuals. ",
-      
-      "The hazards may change over time, ",
-      "but their ratio remains constant."
+      "At t = ", input$timeF,
+      ", frail individuals represent ",
+      round(100 * m$pF0[n], 1),
+      "% of control survivors and ",
+      round(100 * m$pF1[n], 1),
+      "% of treated survivors. ",
+      "The conditional HR is ", input$hrF,
+      ", whereas the marginal HR is ",
+      round(m$HRm[n], 3),
+      ". This difference arises because the ",
+      "composition of survivors changes over time."
     )
   })
   
 }
 
-
+# Launch application
 shinyApp(ui, server)
