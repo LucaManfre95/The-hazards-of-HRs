@@ -109,15 +109,15 @@ The marginal hazard is the average of subgroup-specific hazards weighted by thei
 
 For control:
 
-$$
-\lambda_0(t) = p_{F,0}(t)(0.20) + [1-p_{F,0}(t)](0.02).
-$$
+```math
+\lambda_0(t) = p_{F,0}(t)(0.20) + [1-p_{F,0}(t)](0.02)
+```
 
 For treatment:
 
-$$
-\lambda_1(t) = p_{F,1}(t)(0.10) + [1-p_{F,1}(t)](0.01).
-$$
+```math
+\lambda_1(t) = p_{F,1}(t)(0.10) + [1-p_{F,1}(t)](0.01)
+```
 
 Here,
 
