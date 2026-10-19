@@ -4,32 +4,31 @@ An interactive educational project in R, inspired by Hernán (2010), *The Hazard
 
 ## Objective
 
-To investigate the interpretation of hazard ratios in survival analysis for causal inference.
+To investigate the interpretation of hazard ratios $(HRs)$ in survival analysis for causal inference.
 
 The project uses mathematical examples, simulations, and interactive visualizations to explore:
 
-- Hazard ratios versus cumulative risk ratios.
-- Proportional hazards and time-varying baseline hazards.
+- HRs versus cumulative risk ratios $(RR)$.
+- Proportional hazards $(\lambda)$ and time-varying baseline hazards.
 - Depletion of susceptibles and survivor selection.
-- Marginal versus conditional hazard ratios.
+- Marginal versus conditional HRs.
 
 ## Experiment 1: Proportional hazards
 
 We assume a time-varying control hazard:
 
-\[
+$$
 \lambda_0(t)=\lambda_0(0.1+0.9e^{-ct})
-\]
+$$
 
 and impose proportional hazards:
 
-\[
+$$
 \lambda_1(t)=HR\cdot\lambda_0(t).
-\]
+$$
 
 The interactive application allows users to change the baseline hazard, hazard ratio, decay parameter, and follow-up duration.
 
-The objective is to demonstrate that a constant HR does not imply a constant cumulative RR.
 
 **Important:** This experiment specifies marginal hazards directly. It does not yet simulate individual frailty or survivor selection.
 
